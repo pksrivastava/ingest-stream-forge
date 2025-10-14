@@ -1,0 +1,7 @@
+project_id = "jemnukjewyzrelauapfp"
+
+[functions.transcode]
+verify_jwt = false
+
+[functions.start-transcode]
+verify_jwt = false
