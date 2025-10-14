@@ -18,39 +18,57 @@ export type Database = {
         Row: {
           created_at: string
           error_message: string | null
+          estimated_duration: number | null
           id: string
           input_file_url: string
           original_filename: string
           output_format: string
           output_url: string | null
+          priority: number | null
+          processing_node: string | null
           progress: number | null
+          resolution_variants: Json | null
+          retry_count: number | null
           status: string
+          total_size_bytes: number | null
           updated_at: string
           user_id: string
         }
         Insert: {
           created_at?: string
           error_message?: string | null
+          estimated_duration?: number | null
           id?: string
           input_file_url: string
           original_filename: string
           output_format?: string
           output_url?: string | null
+          priority?: number | null
+          processing_node?: string | null
           progress?: number | null
+          resolution_variants?: Json | null
+          retry_count?: number | null
           status?: string
+          total_size_bytes?: number | null
           updated_at?: string
           user_id: string
         }
         Update: {
           created_at?: string
           error_message?: string | null
+          estimated_duration?: number | null
           id?: string
           input_file_url?: string
           original_filename?: string
           output_format?: string
           output_url?: string | null
+          priority?: number | null
+          processing_node?: string | null
           progress?: number | null
+          resolution_variants?: Json | null
+          retry_count?: number | null
           status?: string
+          total_size_bytes?: number | null
           updated_at?: string
           user_id?: string
         }
@@ -58,7 +76,17 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      transcoding_stats: {
+        Row: {
+          avg_progress: number | null
+          job_count: number | null
+          newest_job: string | null
+          oldest_job: string | null
+          status: string | null
+          total_size: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       [_ in never]: never
