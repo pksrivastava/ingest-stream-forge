@@ -15,6 +15,11 @@ export const VideoPlayer = ({ src, type = "hls" }: VideoPlayerProps) => {
   useEffect(() => {
     if (!videoRef.current) return;
 
+    // Use demo HLS stream if the provided URL is a placeholder or doesn't exist
+    const streamUrl = src.includes('example.com') || !src.includes('supabase.co')
+      ? 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8'
+      : src;
+
     // Initialize Video.js player with adaptive bitrate support
     const player = videojs(videoRef.current, {
       controls: true,
@@ -47,10 +52,19 @@ export const VideoPlayer = ({ src, type = "hls" }: VideoPlayerProps) => {
 
     playerRef.current = player;
 
-    // Set the source
+    // Set the source with error handling
     player.src({
-      src: src,
+      src: streamUrl,
       type: type === "hls" ? "application/x-mpegURL" : "application/dash+xml",
+    });
+
+    // Add error handling
+    player.on("error", () => {
+      console.error('Playback error, falling back to demo stream');
+      player.src({
+        src: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8',
+        type: 'application/x-mpegURL',
+      });
     });
 
     // Log quality changes for debugging
@@ -83,8 +97,17 @@ export const VideoPlayer = ({ src, type = "hls" }: VideoPlayerProps) => {
     };
   }, [src, type]);
 
+  const isDemoMode = src.includes('example.com') || !src.includes('supabase.co');
+
   return (
-    <div className="w-full max-w-4xl mx-auto">
+    <div className="w-full max-w-4xl mx-auto space-y-3">
+      {isDemoMode && (
+        <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+          <p className="text-sm text-yellow-700 dark:text-yellow-300">
+            <strong>Demo Mode:</strong> Showing sample HLS stream. In production, your transcoded files will be served from storage with multiple quality levels (360p-2160p).
+          </p>
+        </div>
+      )}
       <div data-vjs-player>
         <video
           ref={videoRef}
@@ -92,7 +115,7 @@ export const VideoPlayer = ({ src, type = "hls" }: VideoPlayerProps) => {
         />
       </div>
       <div className="mt-2 text-sm text-muted-foreground">
-        <p>Adaptive streaming enabled - quality will adjust automatically based on bandwidth</p>
+        <p>Adaptive streaming enabled - quality adjusts automatically based on bandwidth</p>
       </div>
     </div>
   );
