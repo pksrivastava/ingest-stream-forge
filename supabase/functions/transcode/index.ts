@@ -6,6 +6,8 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -14,18 +16,23 @@ serve(async (req) => {
 
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     const { jobId } = await req.json();
 
-    if (!jobId) {
+    // Validate jobId format
+    if (!jobId || typeof jobId !== "string") {
       throw new Error("Job ID is required");
+    }
+
+    if (!UUID_REGEX.test(jobId)) {
+      throw new Error("Invalid job ID format");
     }
 
     console.log(`Starting transcoding job: ${jobId}`);
 
-    // Fetch job details
+    // Fetch job details using service role (this function is only called internally)
     const { data: job, error: jobError } = await supabase
       .from("transcoding_jobs")
       .select("*")
@@ -33,7 +40,7 @@ serve(async (req) => {
       .single();
 
     if (jobError || !job) {
-      throw new Error(`Job not found: ${jobError?.message}`);
+      throw new Error("Job not found");
     }
 
     // Update status to processing
@@ -94,8 +101,11 @@ serve(async (req) => {
 
     // Update job status to failed
     try {
-      const { jobId } = await req.json();
-      if (jobId) {
+      const bodyText = await req.text();
+      const body = JSON.parse(bodyText);
+      const jobId = body.jobId;
+      
+      if (jobId && UUID_REGEX.test(jobId)) {
         const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
         const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
         const supabase = createClient(supabaseUrl, supabaseKey);
@@ -104,7 +114,7 @@ serve(async (req) => {
           .from("transcoding_jobs")
           .update({
             status: "failed",
-            error_message: error.message,
+            error_message: "Processing failed",
           })
           .eq("id", jobId);
       }
@@ -114,7 +124,7 @@ serve(async (req) => {
 
     return new Response(
       JSON.stringify({
-        error: error.message || "Transcoding failed",
+        error: "An error occurred during processing",
       }),
       {
         status: 500,
