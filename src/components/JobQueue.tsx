@@ -7,6 +7,23 @@ import { supabase } from "@/integrations/supabase/client";
 import { Clock, CheckCircle, XCircle, Loader2, Play, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { TranscodeButton } from "./TranscodeButton";
+import { VideoPlayer } from "./VideoPlayer";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+
+interface ResolutionVariant {
+  resolution: string;
+  width: number;
+  height: number;
+  bitrate: number;
+  url: string;
+  size_bytes: number;
+}
 
 interface Job {
   id: string;
@@ -17,6 +34,9 @@ interface Job {
   created_at: string;
   output_url: string | null;
   error_message: string | null;
+  resolution_variants: ResolutionVariant[] | null;
+  total_size_bytes: number | null;
+  estimated_duration: number | null;
 }
 
 export const JobQueue = () => {
@@ -32,7 +52,7 @@ export const JobQueue = () => {
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      setJobs(data || []);
+      setJobs((data as unknown as Job[]) || []);
     } catch (error: any) {
       console.error("Error fetching jobs:", error);
       toast({
@@ -119,6 +139,20 @@ export const JobQueue = () => {
     }
   };
 
+  const formatBytes = (bytes: number) => {
+    if (bytes === 0) return "0 Bytes";
+    const k = 1024;
+    const sizes = ["Bytes", "KB", "MB", "GB", "TB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + " " + sizes[i];
+  };
+
+  const formatDuration = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}m ${secs}s`;
+  };
+
   if (loading) {
     return (
       <Card>
@@ -177,13 +211,50 @@ export const JobQueue = () => {
               </div>
             )}
 
-            {job.status === "completed" && job.output_url && (
-              <Button variant="outline" size="sm" className="w-full" asChild>
-                <a href={job.output_url} target="_blank" rel="noopener noreferrer">
-                  <Play className="w-4 h-4 mr-2" />
-                  View Output
-                </a>
-              </Button>
+            {job.status === "completed" && (
+              <div className="space-y-2">
+                {job.resolution_variants && job.resolution_variants.length > 0 && (
+                  <div className="text-xs space-y-1">
+                    <p className="font-medium text-muted-foreground">Available Resolutions:</p>
+                    <div className="flex flex-wrap gap-1">
+                      {job.resolution_variants.map((variant) => (
+                        <Badge key={variant.resolution} variant="secondary" className="text-xs">
+                          {variant.resolution}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {job.total_size_bytes && (
+                  <p className="text-xs text-muted-foreground">
+                    Total size: {formatBytes(job.total_size_bytes)}
+                  </p>
+                )}
+
+                {job.estimated_duration && (
+                  <p className="text-xs text-muted-foreground">
+                    Processing time: {formatDuration(job.estimated_duration)}
+                  </p>
+                )}
+
+                {job.output_url && (
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button variant="outline" size="sm" className="w-full">
+                        <Play className="w-4 h-4 mr-2" />
+                        Play Video
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-4xl">
+                      <DialogHeader>
+                        <DialogTitle>{job.original_filename}</DialogTitle>
+                      </DialogHeader>
+                      <VideoPlayer src={job.output_url} type="hls" />
+                    </DialogContent>
+                  </Dialog>
+                )}
+              </div>
             )}
 
             {job.status === "failed" && job.error_message && (
