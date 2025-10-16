@@ -43,11 +43,12 @@ serve(async (req) => {
       global: { headers: { Authorization: authHeader } },
     });
 
-    const {
-      data: { user },
-      error: userError,
-    } = await userClient.auth.getUser();
+    // Extract raw JWT and verify explicitly to avoid server-context session issues
+    const token = authHeader.replace(/^Bearer\s+/i, "");
+    const { data: userData, error: userError } = await userClient.auth.getUser(token);
+    const user = userData?.user;
     if (userError || !user) {
+      console.error("Auth getUser failed:", userError);
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -103,7 +104,7 @@ serve(async (req) => {
       .from("transcoding_jobs")
       .select("id,status")
       .eq("id", jobId)
-      .single();
+      .maybeSingle();
 
     if (jobError || !job) {
       return new Response(JSON.stringify({ error: "Job not found or access denied" }), {
