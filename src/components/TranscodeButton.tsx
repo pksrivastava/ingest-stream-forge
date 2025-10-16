@@ -14,12 +14,16 @@ export const TranscodeButton = ({ jobId, status }: TranscodeButtonProps) => {
   const { toast } = useToast();
 
   const startTranscode = async () => {
+    console.log("Starting transcode for job:", jobId);
     setLoading(true);
 
     try {
-      const { error } = await supabase.functions.invoke("start-transcode", {
+      console.log("Invoking start-transcode function...");
+      const { data, error } = await supabase.functions.invoke("start-transcode", {
         body: { jobId },
       });
+
+      console.log("Function response:", { data, error });
 
       if (error) throw error;
 
