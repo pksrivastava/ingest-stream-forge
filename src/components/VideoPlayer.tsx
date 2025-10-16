@@ -101,13 +101,6 @@ export const VideoPlayer = ({ src, type = "hls" }: VideoPlayerProps) => {
 
   return (
     <div className="w-full max-w-4xl mx-auto space-y-3">
-      {isDemoMode && (
-        <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
-          <p className="text-sm text-yellow-700 dark:text-yellow-300">
-            <strong>Demo Mode:</strong> Showing sample HLS stream. In production, your transcoded files will be served from storage with multiple quality levels (360p-2160p).
-          </p>
-        </div>
-      )}
       <div data-vjs-player>
         <video
           ref={videoRef}
