@@ -2,8 +2,10 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Auth } from "@/components/Auth";
 import { FileUpload } from "@/components/FileUpload";
+import { BulkUpload } from "@/components/BulkUpload";
 import { JobQueue } from "@/components/JobQueue";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LogOut } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -68,7 +70,18 @@ const Index = () => {
         </div>
 
         {/* Upload Section */}
-        <FileUpload onUploadComplete={() => setRefreshKey((prev) => prev + 1)} />
+        <Tabs defaultValue="single" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="single">Single Upload</TabsTrigger>
+            <TabsTrigger value="bulk">Bulk Upload</TabsTrigger>
+          </TabsList>
+          <TabsContent value="single" className="mt-6">
+            <FileUpload onUploadComplete={() => setRefreshKey((prev) => prev + 1)} />
+          </TabsContent>
+          <TabsContent value="bulk" className="mt-6">
+            <BulkUpload onUploadComplete={() => setRefreshKey((prev) => prev + 1)} />
+          </TabsContent>
+        </Tabs>
 
         {/* Job Queue */}
         <JobQueue key={refreshKey} />
