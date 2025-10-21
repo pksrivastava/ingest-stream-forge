@@ -4,17 +4,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
-import { Clock, CheckCircle, XCircle, Loader2, Play, Trash2 } from "lucide-react";
+import { Clock, CheckCircle, XCircle, Loader2, Eye, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { TranscodeButton } from "./TranscodeButton";
-import { VideoPlayer } from "./VideoPlayer";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+import { VideoPreview } from "./VideoPreview";
 
 interface ResolutionVariant {
   resolution: string;
@@ -42,6 +35,7 @@ interface Job {
 export const JobQueue = () => {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
+  const [previewJob, setPreviewJob] = useState<Job | null>(null);
   const { toast } = useToast();
 
   const fetchJobs = async () => {
@@ -239,20 +233,15 @@ export const JobQueue = () => {
                 )}
 
                 {job.output_url && (
-                  <Dialog>
-                    <DialogTrigger asChild>
-                      <Button variant="outline" size="sm" className="w-full">
-                        <Play className="w-4 h-4 mr-2" />
-                        Play Video
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-4xl">
-                      <DialogHeader>
-                        <DialogTitle>{job.original_filename}</DialogTitle>
-                      </DialogHeader>
-                      <VideoPlayer src={job.output_url} type="hls" />
-                    </DialogContent>
-                  </Dialog>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="w-full"
+                    onClick={() => setPreviewJob(job)}
+                  >
+                    <Eye className="w-4 h-4 mr-2" />
+                    Preview & Review
+                  </Button>
                 )}
               </div>
             )}
@@ -263,6 +252,19 @@ export const JobQueue = () => {
           </div>
         ))}
       </CardContent>
+
+      {/* Preview Dialog */}
+      {previewJob && (
+        <VideoPreview
+          open={!!previewJob}
+          onOpenChange={(open) => !open && setPreviewJob(null)}
+          masterUrl={previewJob.output_url || ""}
+          variants={previewJob.resolution_variants || []}
+          filename={previewJob.original_filename}
+          totalSize={previewJob.total_size_bytes || 0}
+          duration={previewJob.estimated_duration || undefined}
+        />
+      )}
     </Card>
   );
 };
