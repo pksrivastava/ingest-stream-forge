@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { lazy, Suspense } from "react";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
+import DeveloperPortal from "./pages/DeveloperPortal";
 
 const SharePreview = lazy(() => import("./pages/SharePreview"));
 
@@ -19,6 +20,7 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
+          <Route path="/developer" element={<DeveloperPortal />} />
           <Route 
             path="/share" 
             element={
