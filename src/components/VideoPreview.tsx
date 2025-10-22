@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,7 +18,8 @@ import {
   HardDrive,
   Clock,
   MonitorPlay
-} from "lucide-react";
+ } from "lucide-react";
+ import { Share2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import videojs from "video.js";
 import "video.js/dist/video-js.css";
@@ -61,11 +62,16 @@ export const VideoPreview = ({
   const [isMuted, setIsMuted] = useState(false);
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
   const { toast } = useToast();
+  const shareUrl = typeof window !== 'undefined' 
+    ? `${window.location.origin}/share?src=${encodeURIComponent(masterUrl)}&title=${encodeURIComponent(filename)}`
+    : '';
+
 
   // Initialize Video.js player
   useEffect(() => {
     if (!videoRef.current || !open) return;
 
+    const src = selectedVariant?.url || masterUrl;
     const player = videojs(videoRef.current, {
       controls: false,
       autoplay: false,
@@ -74,8 +80,8 @@ export const VideoPreview = ({
       responsive: true,
       sources: [
         {
-          src: selectedVariant?.url || masterUrl,
-          type: "application/x-mpegURL",
+          src,
+          type: getMimeType(src),
         },
       ],
     });
@@ -155,7 +161,7 @@ export const VideoPreview = ({
     setSelectedVariant(variant);
     playerRef.current.src({
       src: variant.url,
-      type: "application/x-mpegURL",
+      type: getMimeType(variant.url),
     });
 
     playerRef.current.one("loadedmetadata", () => {
@@ -201,6 +207,15 @@ export const VideoPreview = ({
     return `${(bitrate / 1000000).toFixed(1)} Mbps`;
   };
 
+  const getMimeType = (url: string) => {
+    const lower = url.toLowerCase();
+    if (lower.endsWith('.m3u8')) return 'application/x-mpegURL';
+    if (lower.endsWith('.mp4') || lower.endsWith('.mov')) return 'video/mp4';
+    if (lower.endsWith('.webm')) return 'video/webm';
+    if (lower.endsWith('.mkv')) return 'video/x-matroska';
+    return 'application/x-mpegURL';
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-7xl max-h-[95vh] overflow-y-auto">
@@ -209,6 +224,7 @@ export const VideoPreview = ({
             <FileVideo className="w-5 h-5" />
             {filename}
           </DialogTitle>
+          <DialogDescription>Review and share your transcoded media</DialogDescription>
         </DialogHeader>
 
         <Tabs defaultValue="player" className="w-full">
@@ -401,7 +417,7 @@ export const VideoPreview = ({
                       if (playerRef.current) {
                         playerRef.current.src({
                           src: masterUrl,
-                          type: "application/x-mpegURL",
+                          type: getMimeType(masterUrl),
                         });
                       }
                     }}
@@ -512,6 +528,18 @@ export const VideoPreview = ({
                   <code className="block p-2 text-xs bg-muted rounded overflow-x-auto">
                     {masterUrl}
                   </code>
+                  <div className="flex gap-2 pt-2">
+                    <Button size="sm" variant="secondary" onClick={() => {
+                      navigator.clipboard.writeText(shareUrl);
+                      toast({ title: "Share link copied", description: "Public preview URL copied to clipboard" });
+                    }}>
+                      <Share2 className="w-3 h-3 mr-1" />
+                      Copy Share Link
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => window.open(shareUrl, "_blank")}> 
+                      Open Share Page
+                    </Button>
+                  </div>
                 </div>
                 {variants.map((variant) => (
                   <div key={variant.resolution} className="space-y-2">

@@ -51,16 +51,28 @@ export const FileUpload = ({ onUploadComplete }: FileUploadProps) => {
           data: { publicUrl },
         } = supabase.storage.from("source-files").getPublicUrl(fileName);
 
-        // Create transcoding job
-        const { error: jobError } = await supabase.from("transcoding_jobs").insert({
-          user_id: user.id,
-          original_filename: file.name,
-          input_file_url: publicUrl,
-          output_format: "hls",
-          status: "pending",
-        });
-
+        const { data: job, error: jobError } = await supabase
+          .from("transcoding_jobs")
+          .insert({
+            user_id: user.id,
+            original_filename: file.name,
+            input_file_url: publicUrl,
+            output_format: "hls",
+            status: "pending",
+          })
+          .select()
+          .single();
+ 
         if (jobError) throw jobError;
+ 
+        // Auto-start transcoding for this upload
+        try {
+          await supabase.functions.invoke("start-transcode", {
+            body: { jobId: job.id },
+          });
+        } catch (e) {
+          console.warn("Auto transcode start failed (will be retried manually):", e);
+        }
 
         toast({
           title: "Upload successful",
