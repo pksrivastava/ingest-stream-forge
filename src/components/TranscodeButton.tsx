@@ -64,9 +64,13 @@ export const TranscodeButton = ({ jobId, status }: TranscodeButtonProps) => {
       const uploads = Object.entries(hls.files).map(async ([name, bytes]) => {
         const contentType = mimeByName(name);
         const path = `${basePath}${name}`;
+        // Safely copy into a new ArrayBuffer (avoids SharedArrayBuffer typing issues)
+        const arrayBuffer = new ArrayBuffer(bytes.byteLength);
+        new Uint8Array(arrayBuffer).set(bytes);
+        const blobToUpload = new Blob([arrayBuffer], { type: contentType });
         const { error } = await supabase.storage
           .from("transcoded-outputs")
-          .upload(path, new Blob([bytes], { type: contentType }), {
+          .upload(path, blobToUpload, {
             upsert: true,
             contentType,
           });
