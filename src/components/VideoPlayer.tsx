@@ -15,10 +15,8 @@ export const VideoPlayer = ({ src, type = "hls" }: VideoPlayerProps) => {
   useEffect(() => {
     if (!videoRef.current) return;
 
-    // Use demo HLS stream if the provided URL is a placeholder or doesn't exist
-    const streamUrl = src.includes('example.com') || !src.includes('supabase.co')
-      ? 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8'
-      : src;
+    // Use provided src directly; fallback happens on error events
+    const streamUrl = src;
 
     // Initialize Video.js player with adaptive bitrate support
     const player = videojs(videoRef.current, {
@@ -97,7 +95,7 @@ export const VideoPlayer = ({ src, type = "hls" }: VideoPlayerProps) => {
     };
   }, [src, type]);
 
-  const isDemoMode = src.includes('example.com') || !src.includes('supabase.co');
+  
 
   return (
     <div className="w-full max-w-4xl mx-auto space-y-3">
